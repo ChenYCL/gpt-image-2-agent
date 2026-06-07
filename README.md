@@ -1,65 +1,90 @@
-# gpt-image-2-agent
+# gpt-image-2-agent Skill
 
-这是一个 OpenClaw 技能集合仓库，包含各种实用的 agent skills，帮助扩展 OpenClaw 的能力。
+An [OpenClaw](https://openclaw.ai) / [LobeHub](https://lobehub.com) skill (package name: `gpt-image-2-agent`) that generates and edits images with OpenAI's **`gpt-image-2`** model.
 
-## 📚 技能列表
+Supports **text-to-image**, **image-to-image editing**, **multi-reference composition**, and **mask-based inpainting**. Results are saved as local files and returned as structured JSON, so other agents/tools can consume the output directly.
 
-### [gpt-image-2-agent](./gpt-image-2-agent/)
+## ✨ Features
 
-Generate or edit images with OpenAI's gpt-image-2 model. Supports text-to-image, image-to-image editing, reference composition, and mask-based inpainting. Saves images locally and returns their file paths for integration with other agents/tools.
+- 🎨 Text-to-image generation
+- 🖼️ Image-to-image editing (one or more reference images)
+- 🧩 Compose a new image from multiple references
+- 🩹 Mask-based inpainting
+- 📦 **Zero third-party dependencies** — pure Python stdlib
+- 🤝 Structured JSON output for agent-to-agent handoff
+- 🔐 No hard-coded secrets — credentials come from env/config
 
-## 🚀 如何使用
+## 🚀 Install
 
-### 方法 1：直接使用源代码
+In LobeHub / OpenClaw, install from this repo URL:
 
-1. Clone 这个仓库：
-   ```bash
-   git clone https://github.com/ChenYCL/gpt-image-2-agent.git
-   cd gpt-image-2-agent
-   ```
-
-2. 使用具体的 skill：
-   ```bash
-   cd gpt-image-2-agent
-   # 按照 SKILL.md 说明使用
-   ```
-
-### 方法 2：安装到 LobeHub
-
-将 skill 复制到 LobeHub 的 skills 目录：
-
-```bash
-cp -r gpt-image-2-agent ~/.lobeagent/workspace/skills/
+```
+https://github.com/ChenYCL/gpt-image-2-agent
 ```
 
-## 📝 Skill 概述
+Or clone manually:
 
-**gpt-image-2-agent** 是一个强大的图像生成和编辑 skill，基于 OpenAI 的 `gpt-image-2` 模型。
+```bash
+git clone https://github.com/ChenYCL/gpt-image-2-agent.git
+```
 
-### 主要功能
+## 🔑 Setup (the only thing each user must do)
 
-- **文本到图像（Text-to-Image）** - 从文本描述生成图像
-- **图像编辑（Image Editing）** - 编辑和转换现有图像
-- **引用合成（Reference Composition）** - 从多个引用图像合成新图像
-- **区域修复（Inpainting）** - 使用遮罩修复图像的特定区域
-- **本地保存** - 所有结果保存为本地文件，方便与其他 agents 集成
+Provide an API key. Resolution order: **CLI flag → env var → `config.json` → default**.
 
-## 💡 使用场景
+### Option A — Environment variables (recommended)
 
-- 创建营销物料和海报
-- 设计 UI/UX 原型
-- 生成产品展示图
-- 编辑和转换照片
-- 创意内容生成
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | — | API key with image generation scope (**required**) |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | Proxy / OpenAI-compatible gateway |
+| `GPT_IMAGE_MODEL` | `gpt-image-2` | Override the model name |
 
-## 📄 许可证
+### Option B — Config file
 
-MIT License
+```bash
+cp config.example.json config.json   # then fill in your key
+```
 
-## 🤝 贡献
+> `config.json` holds your secret and is **gitignored** — it is never committed.
 
-欢迎贡献新的 skills 或改进现有的 skills！提交 Pull Request 或 Issue 来帮助我们改进。
 
----
+## ✅ Agent/chat behavior
 
-**注意：** 这些 skills 是为 LobeHub AI 助手设计的。
+This skill is designed for chat-agent use:
+
+1. The agent injects saved LobeHub credentials when available.
+2. The script reads `OPENAI_API_KEY` / `OPENAI_BASE_URL` from the environment, or falls back to `config.json`.
+3. If credentials are missing, the script returns a structured `missing_api_key` JSON error with setup guidance.
+4. On success, the agent parses `images[].path`, exports the image when running in sandbox, and shows a preview/download link in chat.
+
+## 📖 Usage
+
+```bash
+# Text-to-image
+python3 scripts/generate.py "a cozy reading nook by a rainy window, warm light" --out-dir ./generated-images
+
+# Control size / quality / format
+python3 scripts/generate.py "minimalist mountain logo, flat vector" --size 1024x1024 --quality high --format png
+
+# Image-to-image editing
+python3 scripts/generate.py "place this product on a marble counter" --ref ./product.png --quality high
+
+# Inpainting with a mask
+python3 scripts/generate.py "replace the sky with a dramatic sunset" --ref ./photo.png --mask ./sky-mask.png
+```
+
+See [`SKILL.md`](./SKILL.md) for the full reference, all flags, and output format.
+
+## 🤖 Agent collaboration
+
+On success the script prints a JSON object to **stdout** with `images[].path`; on failure a JSON error goes to **stderr** with `"ok": false`. Parse stdout and read the file paths to hand results off downstream.
+
+## 📝 Notes
+
+- `gpt-image-2` does not support transparent backgrounds.
+- All prompts/outputs are subject to OpenAI's content policy.
+
+## License
+
+MIT
